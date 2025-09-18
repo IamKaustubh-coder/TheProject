@@ -6,7 +6,7 @@ import datetime as dt
 # --- Configuration ---
 SYMBOLS = ["AAPL", "MSFT"]
 DATA_DIR = "data"
-INTERVAL = "1m"
+INTERVAL = "60m"
 
 def download_data_in_chunks(start_date, end_date):
     """
@@ -16,8 +16,8 @@ def download_data_in_chunks(start_date, end_date):
     print("--- Starting Data Download ---")
     os.makedirs(DATA_DIR, exist_ok=True)
 
-    # Ensure the start date is no more than 30 days in the past due to API limits
-    thirty_days_ago = dt.datetime.now() - dt.timedelta(days=30)
+    # Ensure the start date is no more than 730 days in the past due to API limits
+    thirty_days_ago = dt.datetime.now() - dt.timedelta(days=730)
     if start_date < thirty_days_ago:
         print(f"Warning: 1m data is only available for the last 30 days. Adjusting start date from {start_date.strftime('%Y-%m-%d')} to {thirty_days_ago.strftime('%Y-%m-%d')}.")
         start_date = thirty_days_ago

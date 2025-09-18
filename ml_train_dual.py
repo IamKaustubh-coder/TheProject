@@ -10,7 +10,7 @@ from core.calibration import fit_isotonic, apply_calibrator, fit_platt, apply_pl
 
 def train_dual_side(
     df: pd.DataFrame,
-    profit_take=0.004, stop_loss=0.004, tmax=60,
+    profit_take=0.01, stop_loss=0.01, tmax=240,
     cost_per_trade=0.0015,
     out_dir="artifacts", symbol="AAPL",
     calibration="isotonic"  # "isotonic" | "platt"
@@ -25,18 +25,18 @@ def train_dual_side(
     y_up = (Z["label"] == 1).astype(int)
     y_dn = (Z["label"] == -1).astype(int)
 
-    cpcv = CombinatorialPurgedCV(n_splits=3, embargo_pct=0.01)
+    cpcv = CombinatorialPurgedCV(n_splits=10, embargo_pct=0.01)
 
     tr_up = train_random_forest_cpcv(
         Xz, y_up, cpcv, labels,
         class_weight="balanced",
-        rf_params={"n_estimators": 500, "min_samples_leaf": 5, "n_jobs": -1, "random_state": 42},
+        rf_params={"n_estimators": 150, "min_samples_leaf": 5, "n_jobs": -1, "random_state": 42},
         cost_per_trade=cost_per_trade, gain_per_win=profit_take, loss_per_lose=stop_loss
     )
     tr_dn = train_random_forest_cpcv(
         Xz, y_dn, cpcv, labels,
         class_weight="balanced",
-        rf_params={"n_estimators": 500, "min_samples_leaf": 5, "n_jobs": -1, "random_state": 42},
+        rf_params={"n_estimators": 150, "min_samples_leaf": 5, "n_jobs": -1, "random_state": 42},
         cost_per_trade=cost_per_trade, gain_per_win=profit_take, loss_per_lose=stop_loss
     )
 

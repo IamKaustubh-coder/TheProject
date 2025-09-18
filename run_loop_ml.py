@@ -67,8 +67,8 @@ def main():
     print("Backtest complete. Calculating performance...")
     equity_df = pd.DataFrame(portfolio.equity_curve)
     
-    if equity_df.empty:
-        print("No trades were made. Cannot calculate KPIs.")
+    if portfolio.fill_count == 0:
+        print("No trades were executed. Cannot calculate KPIs.")
         return
 
     # For minute bars in US equities: ~252 trading days * 390 minutes per day

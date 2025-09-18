@@ -71,6 +71,7 @@ class Portfolio:
         self.positions: Dict[str, Position] = {}
         self.last_prices: Dict[str, float] = {}
         self.equity_curve: List[Dict] = []  # rows: {timestamp, cash, holdings, equity}
+        self.fill_count = 0
 
     def _get_or_create_pos(self, symbol: str) -> Position:
         if symbol not in self.positions:
@@ -81,6 +82,7 @@ class Portfolio:
         """
         Update cash and positions based on an executed fill.
         """
+        self.fill_count += 1
         pos = self._get_or_create_pos(evt.symbol)
         gross = float(evt.fill_price) * int(evt.quantity)
         if evt.direction == "BUY":
