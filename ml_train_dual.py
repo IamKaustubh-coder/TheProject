@@ -25,7 +25,7 @@ def train_dual_side(
     y_up = (Z["label"] == 1).astype(int)
     y_dn = (Z["label"] == -1).astype(int)
 
-    cpcv = CombinatorialPurgedCV(n_splits=10, embargo_pct=0.01)
+    cpcv = CombinatorialPurgedCV(n_splits=3, embargo_pct=0.01)
 
     tr_up = train_random_forest_cpcv(
         Xz, y_up, cpcv, labels,

@@ -42,25 +42,25 @@ class CombinatorialPurgedCV:
         embargo_size = int(len(X) * self.embargo_pct)
 
         for train_indices_initial, test_indices in kf.split(all_indices):
-            # 1. Get the start and end times of the test set
             test_start_time = X.index[test_indices].min()
             test_end_time = X.index[test_indices].max()
 
-            # 2. Get label end times for the initial training set
-            train_label_ends = label_info.iloc[train_indices_initial]['t_final']
+            train_indices_before = train_indices_initial[X.index[train_indices_initial] < test_start_time]
+            train_indices_after = train_indices_initial[X.index[train_indices_initial] > test_end_time]
 
-            # 3. Purge: Find training samples whose labels end AFTER the test set begins.
-            # These labels overlap with the test period and must be removed.
-            purged_train_indices = train_indices_initial[train_label_ends < test_start_time]
+            # Purge the "before" part
+            train_label_ends_before = label_info.iloc[train_indices_before]['t_final']
+            purged_train_indices_before = train_indices_before[train_label_ends_before < test_start_time]
 
-            # 4. Embargo: Remove training samples that are within the embargo period after the test set.
+            # Embargo the "after" part
             embargo_start_time = test_end_time
             embargo_period = X.index[X.index > embargo_start_time]
             if not embargo_period.empty:
                 embargo_end_time = embargo_period[min(embargo_size, len(embargo_period)-1)]
-                embargo_indices = all_indices[(X.index >= embargo_start_time) & (X.index <= embargo_end_time)]
-                final_train_indices = np.setdiff1d(purged_train_indices, embargo_indices)
+                embargoed_train_indices_after = train_indices_after[X.index[train_indices_after] > embargo_end_time]
             else:
-                final_train_indices = purged_train_indices
+                embargoed_train_indices_after = train_indices_after
+
+            final_train_indices = np.concatenate([purged_train_indices_before, embargoed_train_indices_after])
 
             yield final_train_indices, test_indices
