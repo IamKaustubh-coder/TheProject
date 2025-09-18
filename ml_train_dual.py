@@ -28,13 +28,13 @@ def train_dual_side(
     cpcv = CombinatorialPurgedCV(n_splits=10, embargo_pct=0.01)
 
     tr_up = train_random_forest_cpcv(
-        Xz, y_up, cpcv,
+        Xz, y_up, cpcv, labels,
         class_weight="balanced",
         rf_params={"n_estimators": 500, "min_samples_leaf": 5, "n_jobs": -1, "random_state": 42},
         cost_per_trade=cost_per_trade, gain_per_win=profit_take, loss_per_lose=stop_loss
     )
     tr_dn = train_random_forest_cpcv(
-        Xz, y_dn, cpcv,
+        Xz, y_dn, cpcv, labels,
         class_weight="balanced",
         rf_params={"n_estimators": 500, "min_samples_leaf": 5, "n_jobs": -1, "random_state": 42},
         cost_per_trade=cost_per_trade, gain_per_win=profit_take, loss_per_lose=stop_loss

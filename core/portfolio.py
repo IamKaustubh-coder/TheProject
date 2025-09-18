@@ -99,14 +99,20 @@ class Portfolio:
         self.last_prices[sym] = px
 
         # Compute snapshot at this timestamp
-        holdings = sum(self.positions[s].market_value(self.last_prices.get(s, px)) for s in self.positions)
+        holdings = sum(pos.market_value(self.last_prices.get(s, 0.0)) for s, pos in self.positions.items())
         equity = self.cash + holdings
-        self.equity_curve.append({
-            "timestamp": evt.timestamp,
-            "cash": self.cash,
-            "holdings": holdings,
-            "equity": equity,
-        })
+        
+        # If the last entry in the equity curve has the same timestamp, update it. Otherwise, append a new entry.
+        if self.equity_curve and self.equity_curve[-1]["timestamp"] == evt.timestamp:
+            self.equity_curve[-1]["holdings"] = holdings
+            self.equity_curve[-1]["equity"] = equity
+        else:
+            self.equity_curve.append({
+                "timestamp": evt.timestamp,
+                "cash": self.cash,
+                "holdings": holdings,
+                "equity": equity,
+            })
 
     def current_equity(self) -> float:
         if not self.equity_curve:

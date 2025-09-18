@@ -30,7 +30,8 @@ class MLDualProbaStrategy:
 
         sigs: List[SignalEvent] = []
         if cand:
-            direction = max(cand, key=lambda x: x[1])  # pick higher margin over threshold
+            best_signal = max(cand, key=lambda x: x[1])
+            direction = best_signal[0]
             strength = pu if direction == "LONG" else pdn
             sigs.append(SignalEvent(timestamp=event.timestamp, symbol=sym, direction=direction, strength=strength))
         return sigs

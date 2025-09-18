@@ -26,21 +26,29 @@ class TrainResult:
 
 def cost_aware_threshold(y_true: np.ndarray, proba: np.ndarray, gain_per_win: float, loss_per_lose: float, cost_per_trade: float) -> float:
     """
-    Grid-search a probability threshold for entering trades to maximize expected net return per decision:
-    E[pi] = p*gain - (1-p)*loss - cost, applied to candidates across [0.5..0.9].
+    Grid-search a probability threshold to maximize total profit.
     """
-    best_t, best_val = 0.5, -1e18
-    for t in np.linspace(0.5, 0.9, 41):
+    best_t, best_profit = 0.5, -1e18
+    
+    thresholds = np.unique(proba) # Search over unique probability values
+    if len(thresholds) > 100: # If too many unique values, sample them
+        thresholds = np.linspace(thresholds.min(), thresholds.max(), 100)
+
+    for t in thresholds:
         y_hat = (proba >= t).astype(int)
-        p = ((y_true == 1) & (y_hat == 1)).sum() / max((y_hat == 1).sum(), 1)
-        # approximate expected per-trade payoff
-        exp_val = p * gain_per_win - (1 - p) * loss_per_lose - cost_per_trade
-        if exp_val > best_val:
-            best_val, best_t = exp_val, t
+        
+        tp = ((y_true == 1) & (y_hat == 1)).sum()
+        fp = ((y_true == 0) & (y_hat == 1)).sum()
+        
+        total_profit = (tp * gain_per_win) - (fp * loss_per_lose) - ((tp + fp) * cost_per_trade)
+        
+        if total_profit > best_profit:
+            best_profit, best_t = total_profit, t
+            
     return best_t
 
 def train_random_forest_cpcv(
-    X: pd.DataFrame, y: pd.Series, cpcv_splitter, class_weight: Dict[int, float] | str = "balanced",
+    X: pd.DataFrame, y: pd.Series, cpcv_splitter, label_info: pd.DataFrame, class_weight: Dict[int, float] | str = "balanced",
     rf_params: Dict[str, Any] | None = None,
     cost_per_trade: float = 0.0015,  # example: 15 bps round-trip
     gain_per_win: float = 0.002,     # example payoff per hit (tuned to PT/SL)
@@ -52,7 +60,7 @@ def train_random_forest_cpcv(
     folds = []
     models = []
 
-    for tr_idx, te_idx in cpcv_splitter.split(X, y, label_info=None):
+    for tr_idx, te_idx in cpcv_splitter.split(X, y, label_info=label_info):
         X_tr, y_tr = X.iloc[tr_idx], y.iloc[tr_idx]
         X_te, y_te = X.iloc[te_idx], y.iloc[te_idx]
 
@@ -72,7 +80,7 @@ def train_random_forest_cpcv(
     return TrainResult(model=models[-1], oof_pred=oof_pred, oof_proba=oof_proba, folds=folds, metrics={"auc": auc}, threshold=thr)
 
 def train_xgboost_cpcv(
-    X: pd.DataFrame, y: pd.Series, cpcv_splitter, xgb_params: Dict[str, Any] | None = None,
+    X: pd.DataFrame, y: pd.Series, cpcv_splitter, label_info: pd.DataFrame, xgb_params: Dict[str, Any] | None = None,
     cost_per_trade: float = 0.0015, gain_per_win: float = 0.002, loss_per_lose: float = 0.002
 ) -> TrainResult:
     assert HAS_XGB, "XGBoost not available"
@@ -86,7 +94,7 @@ def train_xgboost_cpcv(
     folds = []
     models = []
 
-    for tr_idx, te_idx in cpcv_splitter.split(X, y, label_info=None):
+    for tr_idx, te_idx in cpcv_splitter.split(X, y, label_info=label_info):
         X_tr, y_tr = X.iloc[tr_idx], y.iloc[tr_idx]
         X_te, y_te = X.iloc[te_idx], y.iloc[te_idx]
 
